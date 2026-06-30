@@ -1,0 +1,19 @@
+# Dependency directories
+node_modules/
+
+# Production build output
+dist/
+
+# Local env files (contains Supabase secret keys!)
+.env.local
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE configurations
+.vscode/
+.idea/
+
+# System files
+.DS_Store
