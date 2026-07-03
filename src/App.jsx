@@ -1415,7 +1415,7 @@ function App() {
                 </div>
                 
                 {/* Legend */}
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', fontSize: '0.8rem', marginTop: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', fontSize: '0.8rem', marginTop: '10px', flexWrap: 'wrap' }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <span style={{ display: 'inline-block', width: '12px', height: '12px', background: 'var(--color-primary)', borderRadius: '50%' }}></span> รอบเช้าเริ่มงาน
                   </span>
