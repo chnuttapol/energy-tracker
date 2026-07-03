@@ -44,11 +44,7 @@ body {
   background-attachment: fixed;
   color: var(--color-text-dark);
   min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
   padding: 20px;
-  overflow-x: hidden;
   position: relative;
 }
 
@@ -118,6 +114,7 @@ button, input, textarea {
 .app-container {
   width: 100%;
   max-width: 900px;
+  margin: 0 auto;
 }
 
 .app-header {
