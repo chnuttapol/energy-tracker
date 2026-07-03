@@ -47,16 +47,18 @@ function App() {
   const [logs, setLogs] = useState(() => {
     const saved = localStorage.getItem('energy_tracker_logs');
     if (saved) return JSON.parse(saved);
-    localStorage.setItem('energy_tracker_logs', JSON.stringify(INITIAL_MOCK_LOGS));
-    return INITIAL_MOCK_LOGS;
+    const initial = isSupabaseConfigured ? [] : INITIAL_MOCK_LOGS;
+    localStorage.setItem('energy_tracker_logs', JSON.stringify(initial));
+    return initial;
   });
 
   // State for leaders list
   const [leaders, setLeaders] = useState(() => {
     const saved = localStorage.getItem('energy_tracker_leaders');
     if (saved) return JSON.parse(saved);
-    localStorage.setItem('energy_tracker_leaders', JSON.stringify(INITIAL_LEADERS));
-    return INITIAL_LEADERS;
+    const initial = isSupabaseConfigured ? [] : INITIAL_LEADERS;
+    localStorage.setItem('energy_tracker_leaders', JSON.stringify(initial));
+    return initial;
   });
 
   // UI Navigation state
@@ -286,6 +288,28 @@ function App() {
         // First-time registration flow
         setIsNewUserRegistration(true);
       }
+    }
+  };
+
+  // Handle Google OAuth login (Real Production)
+  const handleGoogleOAuthLogin = async () => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin
+        }
+      });
+      if (error) {
+        console.error('Google OAuth Error:', error);
+        triggerToast('ไม่สามารถเข้าสู่ระบบด้วย Google ได้: ' + error.message);
+      }
+    } catch (err) {
+      console.error(err);
+      triggerToast('เกิดข้อผิดพลาดในการเชื่อมต่อกับ Google');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -640,29 +664,29 @@ function App() {
   const careList = getEmpatheticCareList();
   return (
     <div className="app-container">
-      {/* DB Connection Status Banner */}
-      <div style={{
-        textAlign: 'center',
-        padding: '6px 12px',
-        fontSize: '0.8rem',
-        fontWeight: 'bold',
-        background: isSupabaseConfigured ? 'rgba(0, 184, 148, 0.15)' : 'rgba(243, 156, 18, 0.15)',
-        color: isSupabaseConfigured ? 'var(--color-success)' : 'var(--color-secondary)',
-        borderBottom: `1px solid ${isSupabaseConfigured ? 'rgba(0, 184, 148, 0.2)' : 'rgba(243, 156, 18, 0.2)'}`,
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: '6px',
-        borderRadius: '0 0 12px 12px',
-        marginBottom: '15px'
-      }}>
-        <span>{isSupabaseConfigured ? '🟢 ออนไลน์ (เชื่อมต่อ Supabase แล้ว)' : '🟠 โหมดทดสอบจำลอง (Offline - บันทึกในบราวเซอร์)'}</span>
-        {!isSupabaseConfigured && (
+      {/* DB Connection Status Banner (Only show in local development mock mode) */}
+      {!isSupabaseConfigured && (
+        <div style={{
+          textAlign: 'center',
+          padding: '6px 12px',
+          fontSize: '0.8rem',
+          fontWeight: 'bold',
+          background: 'rgba(243, 156, 18, 0.15)',
+          color: 'var(--color-secondary)',
+          borderBottom: '1px solid rgba(243, 156, 18, 0.2)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: '6px',
+          borderRadius: '0 0 12px 12px',
+          marginBottom: '15px'
+        }}>
+          <span>🟠 โหมดทดสอบจำลอง (Offline - บันทึกในบราวเซอร์)</span>
           <span style={{ fontWeight: 'normal', color: 'var(--color-text-muted)' }}>
             — คัดลอกค่า Env ใส่ไฟล์ .env.local เพื่อรันฐานข้อมูลจริง
           </span>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Loading Overlay */}
       {isLoading && (
@@ -740,54 +764,72 @@ function App() {
             เช็คพลังงานกายและใจวันละ 3 รอบ เพื่อให้เราเท่าทันสติ มีความสุข และพร้อมทำงานอย่างมีประสิทธิภาพในทุกๆ วัน
           </p>
 
-          <form onSubmit={handleGoogleLogin} style={{ marginBottom: '20px' }}>
-            <div className="form-group">
-              <label className="form-label" htmlFor="email-login">อีเมล Google สำหรับทดลองใช้งาน:</label>
-              <input 
-                id="email-login"
-                type="email"
-                className="form-input"
-                placeholder="เช่น boss@company.com หรือ yourname@gmail.com"
-                value={loginEmail}
-                onChange={(e) => setLoginEmail(e.target.value)}
-                required
-              />
+          {isSupabaseConfigured ? (
+            // Real Production Google OAuth Button
+            <div style={{ marginTop: '30px' }}>
+              <button onClick={handleGoogleOAuthLogin} className="btn-google" style={{ margin: '0 auto', maxWidth: '320px' }}>
+                {/* Google SVG Icon */}
+                <svg viewBox="0 0 24 24">
+                  <path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.67 1.5 15.02.75 12 .75 7.37.75 3.39 3.42 1.5 7.28l3.89 3.01C6.3 7.33 8.94 5.04 12 5.04z"/>
+                  <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.35H12v4.51h6.44c-.28 1.48-1.12 2.73-2.37 3.57l3.7 2.87c2.16-1.99 3.72-4.91 3.72-8.6z"/>
+                  <path fill="#FBBC05" d="M5.39 10.29C5.15 11.59 5.02 12.92 5.02 14c0 1.08.13 2.41.37 3.71l-3.89 3.01c-.91-1.83-1.42-3.86-1.42-6.72s.51-4.89 1.42-6.72l3.89 3.01z"/>
+                  <path fill="#34A853" d="M12 23.25c3.24 0 5.97-1.07 7.96-2.91l-3.7-2.87c-1.1.74-2.5 1.18-4.26 1.18-3.06 0-5.7-2.29-6.61-5.25l-3.89 3.01c1.89 3.86 5.87 6.84 10.5 6.84z"/>
+                </svg>
+                เข้าสู่ระบบด้วย Google Account
+              </button>
             </div>
-            
-            <button type="submit" className="btn-google">
-              {/* Google SVG Icon */}
-              <svg viewBox="0 0 24 24">
-                <path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.67 1.5 15.02.75 12 .75 7.37.75 3.39 3.42 1.5 7.28l3.89 3.01C6.3 7.33 8.94 5.04 12 5.04z"/>
-                <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.35H12v4.51h6.44c-.28 1.48-1.12 2.73-2.37 3.57l3.7 2.87c2.16-1.99 3.72-4.91 3.72-8.6z"/>
-                <path fill="#FBBC05" d="M5.39 10.29C5.15 11.59 5.02 12.92 5.02 14c0 1.08.13 2.41.37 3.71l-3.89 3.01c-.91-1.83-1.42-3.86-1.42-6.72s.51-4.89 1.42-6.72l3.89 3.01z"/>
-                <path fill="#34A853" d="M12 23.25c3.24 0 5.97-1.07 7.96-2.91l-3.7-2.87c-1.1.74-2.5 1.18-4.26 1.18-3.06 0-5.7-2.29-6.61-5.25l-3.89 3.01c1.89 3.86 5.87 6.84 10.5 6.84z"/>
-              </svg>
-              เข้าสู่ระบบจำลองบัญชี Google
-            </button>
-          </form>
+          ) : (
+            // Local Mock Login / Magic Link Form for testing
+            <>
+              <form onSubmit={handleGoogleLogin} style={{ marginBottom: '20px' }}>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="email-login">อีเมล Google สำหรับทดลองใช้งาน:</label>
+                  <input 
+                    id="email-login"
+                    type="email"
+                    className="form-input"
+                    placeholder="เช่น boss@company.com หรือ yourname@gmail.com"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                
+                <button type="submit" className="btn-google">
+                  <svg viewBox="0 0 24 24">
+                    <path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.67 1.5 15.02.75 12 .75 7.37.75 3.39 3.42 1.5 7.28l3.89 3.01C6.3 7.33 8.94 5.04 12 5.04z"/>
+                    <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.35H12v4.51h6.44c-.28 1.48-1.12 2.73-2.37 3.57l3.7 2.87c2.16-1.99 3.72-4.91 3.72-8.6z"/>
+                    <path fill="#FBBC05" d="M5.39 10.29C5.15 11.59 5.02 12.92 5.02 14c0 1.08.13 2.41.37 3.71l-3.89 3.01c-.91-1.83-1.42-3.86-1.42-6.72s.51-4.89 1.42-6.72l3.89 3.01z"/>
+                    <path fill="#34A853" d="M12 23.25c3.24 0 5.97-1.07 7.96-2.91l-3.7-2.87c-1.1.74-2.5 1.18-4.26 1.18-3.06 0-5.7-2.29-6.61-5.25l-3.89 3.01c1.89 3.86 5.87 6.84 10.5 6.84z"/>
+                  </svg>
+                  เข้าสู่ระบบจำลองบัญชี Google
+                </button>
+              </form>
 
-          {/* Quick Mock Accounts Picker */}
-          <div className="google-mock-users">
-            <div className="mock-user-title">เลือกรุ่นบัญชีเพื่อทดสอบระบบได้ทันที:</div>
-            <div className="mock-user-list">
-              <button className="btn-mock-user" onClick={() => handleGoogleLogin(null, 'boss@company.com')}>
-                <span>👨‍💼 <strong>boss@company.com</strong> (มีสิทธิ์ดู Dashboard ทีม)</span>
-                <span className="status-badge on-time">Leader</span>
-              </button>
-              <button className="btn-mock-user" onClick={() => handleGoogleLogin(null, 'somchai@company.com')}>
-                <span>🧑‍💻 <strong>somchai@company.com</strong> (พนักงาน - มีข้อมูลประวัติ)</span>
-                <span className="status-badge" style={{ background: '#ECEFF1', color: '#546E7A' }}>Employee</span>
-              </button>
-              <button className="btn-mock-user" onClick={() => handleGoogleLogin(null, 'kaew@company.com')}>
-                <span>👩‍🎨 <strong>kaew@company.com</strong> (พนักงาน - มีประวัติและส่งสาย)</span>
-                <span className="status-badge" style={{ background: '#ECEFF1', color: '#546E7A' }}>Employee</span>
-              </button>
-              <button className="btn-mock-user" onClick={() => handleGoogleLogin(null, 'newbie@company.com')}>
-                <span>🆕 <strong>newbie@company.com</strong> (พนักงานใหม่ - สมัครครั้งแรก)</span>
-                <span className="status-badge" style={{ background: '#E8F5E9', color: '#2E7D32' }}>New User</span>
-              </button>
-            </div>
-          </div>
+              {/* Quick Mock Accounts Picker */}
+              <div className="google-mock-users">
+                <div className="mock-user-title">เลือกรุ่นบัญชีเพื่อทดสอบระบบได้ทันที:</div>
+                <div className="mock-user-list">
+                  <button className="btn-mock-user" onClick={() => handleGoogleLogin(null, 'boss@company.com')}>
+                    <span>👨‍💼 <strong>boss@company.com</strong> (มีสิทธิ์ดู Dashboard ทีม)</span>
+                    <span className="status-badge on-time">Leader</span>
+                  </button>
+                  <button className="btn-mock-user" onClick={() => handleGoogleLogin(null, 'somchai@company.com')}>
+                    <span>🧑‍💻 <strong>somchai@company.com</strong> (พนักงาน - มีข้อมูลประวัติ)</span>
+                    <span className="status-badge" style={{ background: '#ECEFF1', color: '#546E7A' }}>Employee</span>
+                  </button>
+                  <button className="btn-mock-user" onClick={() => handleGoogleLogin(null, 'kaew@company.com')}>
+                    <span>👩‍🎨 <strong>kaew@company.com</strong> (พนักงาน - มีประวัติและส่งสาย)</span>
+                    <span className="status-badge" style={{ background: '#ECEFF1', color: '#546E7A' }}>Employee</span>
+                  </button>
+                  <button className="btn-mock-user" onClick={() => handleGoogleLogin(null, 'newbie@company.com')}>
+                    <span>🆕 <strong>newbie@company.com</strong> (พนักงานใหม่ - สมัครครั้งแรก)</span>
+                    <span className="status-badge" style={{ background: '#E8F5E9', color: '#2E7D32' }}>New User</span>
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </main>
       )}
 
@@ -853,50 +895,52 @@ function App() {
                   <strong>เวลาในระบบขณะนี้:</strong> <span style={{ fontFamily: 'var(--font-heading)', fontWeight: '700', fontSize: '1.2rem', color: 'var(--color-primary)' }}>{systemTimeStr} น.</span>
                 </div>
                 
-                <div style={{ background: 'rgba(255,255,255,0.4)', padding: '6px 12px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.05)', fontSize: '0.85rem' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                    <input 
-                      type="checkbox" 
-                      checked={isTimeMocked} 
-                      onChange={(e) => setIsTimeMocked(e.target.checked)} 
-                    />
-                    ⚙️ จำลองเวลาเพื่อกดทดสอบส่งสาย
-                  </label>
-                  {isTimeMocked && (
-                    <div style={{ display: 'flex', gap: '5px', marginTop: '6px', alignItems: 'center' }}>
+                {!isSupabaseConfigured && (
+                  <div style={{ background: 'rgba(255,255,255,0.4)', padding: '6px 12px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.05)', fontSize: '0.85rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
                       <input 
-                        type="text" 
-                        value={mockHour} 
-                        onChange={(e) => setMockHour(e.target.value.slice(0, 2))} 
-                        style={{ width: '35px', padding: '2px', textAlign: 'center', borderRadius: '4px', border: '1px solid #ccc' }}
-                      /> : 
-                      <input 
-                        type="text" 
-                        value={mockMinute} 
-                        onChange={(e) => setMockMinute(e.target.value.slice(0, 2))} 
-                        style={{ width: '35px', padding: '2px', textAlign: 'center', borderRadius: '4px', border: '1px solid #ccc' }}
-                      /> น.
-                      <button 
-                        onClick={() => { setMockHour('08'); setMockMinute('35'); }} 
-                        style={{ fontSize: '0.75rem', padding: '2px 5px', cursor: 'pointer', borderRadius: '4px', border: 'none', background: '#ccc' }}
-                      >
-                        เช้า (ตรงเวลา)
-                      </button>
-                      <button 
-                        onClick={() => { setMockHour('08'); setMockMinute('48'); }} 
-                        style={{ fontSize: '0.75rem', padding: '2px 5px', cursor: 'pointer', borderRadius: '4px', border: 'none', background: '#ccc' }}
-                      >
-                        เช้า (สาย)
-                      </button>
-                      <button 
-                        onClick={() => { setMockHour('14'); setMockMinute('25'); }} 
-                        style={{ fontSize: '0.75rem', padding: '2px 5px', cursor: 'pointer', borderRadius: '4px', border: 'none', background: '#ccc' }}
-                      >
-                        บ่าย (สาย)
-                      </button>
-                    </div>
-                  )}
-                </div>
+                        type="checkbox" 
+                        checked={isTimeMocked} 
+                        onChange={(e) => setIsTimeMocked(e.target.checked)} 
+                      />
+                      ⚙️ จำลองเวลาเพื่อกดทดสอบส่งสาย
+                    </label>
+                    {isTimeMocked && (
+                      <div style={{ display: 'flex', gap: '5px', marginTop: '6px', alignItems: 'center' }}>
+                        <input 
+                          type="text" 
+                          value={mockHour} 
+                          onChange={(e) => setMockHour(e.target.value.slice(0, 2))} 
+                          style={{ width: '35px', padding: '2px', textAlign: 'center', borderRadius: '4px', border: '1px solid #ccc' }}
+                        /> : 
+                        <input 
+                          type="text" 
+                          value={mockMinute} 
+                          onChange={(e) => setMockMinute(e.target.value.slice(0, 2))} 
+                          style={{ width: '35px', padding: '2px', textAlign: 'center', borderRadius: '4px', border: '1px solid #ccc' }}
+                        /> น.
+                        <button 
+                          onClick={() => { setMockHour('08'); setMockMinute('35'); }} 
+                          style={{ fontSize: '0.75rem', padding: '2px 5px', cursor: 'pointer', borderRadius: '4px', border: 'none', background: '#ccc' }}
+                        >
+                          เช้า (ตรงเวลา)
+                        </button>
+                        <button 
+                          onClick={() => { setMockHour('08'); setMockMinute('48'); }} 
+                          style={{ fontSize: '0.75rem', padding: '2px 5px', cursor: 'pointer', borderRadius: '4px', border: 'none', background: '#ccc' }}
+                        >
+                          เช้า (สาย)
+                        </button>
+                        <button 
+                          onClick={() => { setMockHour('14'); setMockMinute('25'); }} 
+                          style={{ fontSize: '0.75rem', padding: '2px 5px', cursor: 'pointer', borderRadius: '4px', border: 'none', background: '#ccc' }}
+                        >
+                          บ่าย (สาย)
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* CHECK-IN FORM */}
