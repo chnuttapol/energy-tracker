@@ -33,6 +33,21 @@ const INITIAL_MOCK_LOGS = [
   { id: '18', email: 'kaew@company.com', nickname: 'แก้ว', score: 75, reason: 'ชาเขียวไข่มุกหวานร้อยเปรียบเหมือนยาวิเศษ พลังชีวิตกลับคืนมา', timestamp: '2026-06-30T14:03:00.000Z', period: 'afternoon', status: 'on-time' },
 ];
 
+// Helper to detect if open in in-app browser (webview like LINE, Facebook, Messenger)
+const isWebView = () => {
+  if (typeof window === 'undefined') return false;
+  const ua = navigator.userAgent || navigator.vendor || window.opera;
+  return (
+    ua.indexOf('FBAN') > -1 ||
+    ua.indexOf('FBAV') > -1 ||
+    ua.indexOf('Line') > -1 ||
+    ua.indexOf('Instagram') > -1 ||
+    ua.indexOf('Twitter') > -1 ||
+    ua.indexOf('gsa') > -1 || // Google Search App on iOS
+    (ua.indexOf('Mobile') > -1 && ua.indexOf('Safari') === -1 && ua.indexOf('Chrome') === -1)
+  );
+};
+
 function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [supabaseUser, setSupabaseUser] = useState(null);
@@ -763,6 +778,27 @@ function App() {
           <p className="login-subtitle">
             เช็คพลังงานกายและใจวันละ 3 รอบ เพื่อให้เราเท่าทันสติ มีความสุข และพร้อมทำงานอย่างมีประสิทธิภาพในทุกๆ วัน
           </p>
+
+          {isWebView() && (
+            <div style={{
+              background: 'rgba(235, 94, 40, 0.1)',
+              border: '1px solid rgba(235, 94, 40, 0.3)',
+              borderRadius: '12px',
+              padding: '14px',
+              color: '#d35400',
+              fontSize: '0.85rem',
+              fontWeight: '500',
+              marginBottom: '20px',
+              textAlign: 'left',
+              lineHeight: '1.5'
+            }}>
+              <strong style={{ display: 'block', marginBottom: '4px', fontSize: '0.9rem' }}>⚠️ คำเตือนระบบความปลอดภัยของ Google:</strong>
+              ระบบตรวจพบว่าคุณเปิดเว็บนี้จากเบราว์เซอร์ภายในแอปอื่น (เช่น LINE, Facebook, Messenger) ซึ่งทำให้ไม่สามารถยืนยันตัวตนกับ Google ได้<br />
+              <span style={{ color: 'var(--color-primary)', fontWeight: 'bold' }}>
+                👉 กรุณากดปุ่มสัญลักษณ์เข็มทิศ / จุดสามจุด ที่มุมขวาบนหรือล่างของหน้าจอ แล้วเลือก "เปิดด้วยเบราว์เซอร์อื่น" หรือ "เปิดใน Safari / Chrome" เพื่อเข้าใช้งานครับ
+              </span>
+            </div>
+          )}
 
           {isSupabaseConfigured ? (
             // Real Production Google OAuth Button
